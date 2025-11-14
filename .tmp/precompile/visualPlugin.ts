@@ -5,8 +5,8 @@ import VisualConstructorOptions = powerbiVisualsApi.extensibility.visual.VisualC
 import DialogConstructorOptions = powerbiVisualsApi.extensibility.visual.DialogConstructorOptions;
 var powerbiKey: any = "powerbi";
 var powerbi: any = window[powerbiKey];
-var canvasVisualBD042C189A134E6F914EF8053B29C0F9: IVisualPlugin = {
-    name: 'canvasVisualBD042C189A134E6F914EF8053B29C0F9',
+var canvasVisualBD042C189A134E6F914EF8053B29C0F9_DEBUG: IVisualPlugin = {
+    name: 'canvasVisualBD042C189A134E6F914EF8053B29C0F9_DEBUG',
     displayName: 'canvasVisual',
     class: 'Visual',
     apiVersion: '5.3.0',
@@ -27,6 +27,6 @@ var canvasVisualBD042C189A134E6F914EF8053B29C0F9: IVisualPlugin = {
 if (typeof powerbi !== "undefined") {
     powerbi.visuals = powerbi.visuals || {};
     powerbi.visuals.plugins = powerbi.visuals.plugins || {};
-    powerbi.visuals.plugins["canvasVisualBD042C189A134E6F914EF8053B29C0F9"] = canvasVisualBD042C189A134E6F914EF8053B29C0F9;
+    powerbi.visuals.plugins["canvasVisualBD042C189A134E6F914EF8053B29C0F9_DEBUG"] = canvasVisualBD042C189A134E6F914EF8053B29C0F9_DEBUG;
 }
-export default canvasVisualBD042C189A134E6F914EF8053B29C0F9;
+export default canvasVisualBD042C189A134E6F914EF8053B29C0F9_DEBUG;

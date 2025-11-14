@@ -14,12 +14,16 @@ export declare class Visual implements IVisual {
     private svgContainer;
     private svg;
     private svgGroup;
+    private webglContainer;
+    private webglCanvas;
+    private gl;
     private margin;
     constructor(options: VisualConstructorOptions);
     update(options: VisualUpdateOptions): void;
     private getDataPoints;
     private renderCanvasBarChart;
     private renderSVGDonutChart;
+    private renderWebGLText;
     private adjustColorBrightness;
     getFormattingModel(): powerbi.visuals.FormattingModel;
 }

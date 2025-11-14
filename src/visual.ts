@@ -55,10 +55,15 @@ export class Visual implements IVisual {
     private canvas: HTMLCanvasElement;
     private canvasContext: CanvasRenderingContext2D;
 
-    // D3 SVG elements (right side)
+    // D3 SVG elements (middle)
     private svgContainer: HTMLElement;
     private svg: d3.Selection<SVGElement, any, any, any>;
     private svgGroup: d3.Selection<SVGGElement, any, any, any>;
+
+    // WebGL container (right side)
+    private webglContainer: HTMLElement;
+    private webglCanvas: HTMLCanvasElement;
+    private gl: WebGLRenderingContext;
 
     // Layout properties
     private margin = { top: 30, right: 20, bottom: 50, left: 50 };
@@ -88,7 +93,7 @@ export class Visual implements IVisual {
         this.canvasContainer.appendChild(this.canvas);
         this.canvasContext = this.canvas.getContext('2d');
 
-        // Create right container for SVG visualization
+        // Create middle container for SVG visualization
         this.svgContainer = document.createElement('div');
         this.svgContainer.className = 'svg-container';
         mainContainer.appendChild(this.svgContainer);
@@ -105,6 +110,33 @@ export class Visual implements IVisual {
 
         this.svgGroup = this.svg.append('g')
             .attr('class', 'svg-group');
+
+        // Create right container for WebGL
+        this.webglContainer = document.createElement('div');
+        this.webglContainer.className = 'webgl-container';
+        mainContainer.appendChild(this.webglContainer);
+
+        const webglTitle = document.createElement('h3');
+        webglTitle.textContent = 'WebGL';
+        webglTitle.className = 'visual-title';
+        this.webglContainer.appendChild(webglTitle);
+
+        // Create WebGL canvas
+        this.webglCanvas = document.createElement('canvas');
+        this.webglCanvas.className = 'webgl-canvas';
+        this.webglContainer.appendChild(this.webglCanvas);
+
+        // Initialize WebGL context
+        const glContext = this.webglCanvas.getContext('webgl') || this.webglCanvas.getContext('experimental-webgl');
+        this.gl = glContext as WebGLRenderingContext;
+
+        if (!this.gl) {
+            console.error('WebGL not supported');
+            const fallbackText = document.createElement('div');
+            fallbackText.className = 'webgl-text';
+            fallbackText.textContent = 'WebGL not supported in this browser';
+            this.webglContainer.appendChild(fallbackText);
+        }
     }
 
     public update(options: VisualUpdateOptions) {
@@ -130,13 +162,13 @@ export class Visual implements IVisual {
             return;
         }
 
-        // Update dimensions - split viewport in half
+        // Update dimensions - split viewport in thirds
         const viewport = options.viewport;
-        const halfWidth = viewport.width / 2;
+        const thirdWidth = viewport.width / 3;
         const titleHeight = 40;
 
         // Update canvas visualization (left side)
-        const canvasWidth = halfWidth - 20;
+        const canvasWidth = thirdWidth - 20;
         const canvasHeight = viewport.height - titleHeight - 20;
 
         this.canvas.width = canvasWidth;
@@ -144,17 +176,27 @@ export class Visual implements IVisual {
         this.canvas.style.width = `${canvasWidth}px`;
         this.canvas.style.height = `${canvasHeight}px`;
 
-        // Update SVG visualization (right side)
-        const svgWidth = halfWidth - 20;
+        // Update SVG visualization (middle)
+        const svgWidth = thirdWidth - 20;
         const svgHeight = viewport.height - titleHeight - 20;
 
         this.svg
             .attr('width', svgWidth)
             .attr('height', svgHeight);
 
-        // Render both visualizations
+        // Update WebGL canvas (right side)
+        const webglWidth = thirdWidth - 20;
+        const webglHeight = viewport.height - titleHeight - 20;
+
+        this.webglCanvas.width = webglWidth;
+        this.webglCanvas.height = webglHeight;
+        this.webglCanvas.style.width = `${webglWidth}px`;
+        this.webglCanvas.style.height = `${webglHeight}px`;
+
+        // Render all visualizations
         this.renderCanvasBarChart(dataPoints, canvasWidth, canvasHeight);
         this.renderSVGDonutChart(dataPoints, svgWidth, svgHeight);
+        this.renderWebGLText();
     }
 
     private getDataPoints(dataView: DataView): DataPoint[] {
@@ -328,6 +370,76 @@ export class Visual implements IVisual {
             .attr('font-size', '11px')
             .attr('fill', '#666')
             .text(d => `${d.category} (${d.value.toFixed(0)})`);
+    }
+
+    private renderWebGLText(): void {
+        if (!this.gl) {
+            return;
+        }
+
+        const gl = this.gl;
+        const width = this.webglCanvas.width;
+        const height = this.webglCanvas.height;
+
+        // Set viewport
+        gl.viewport(0, 0, width, height);
+
+        // Clear with dark background
+        gl.clearColor(0.1, 0.1, 0.1, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // Vertex shader
+        const vertexShaderSource = `
+            attribute vec2 aPosition;
+            void main() {
+                gl_Position = vec4(aPosition, 0.0, 1.0);
+            }
+        `;
+
+        // Fragment shader - green color
+        const fragmentShaderSource = `
+            precision mediump float;
+            void main() {
+                gl_FragColor = vec4(0.2, 0.8, 0.3, 1.0);
+            }
+        `;
+
+        // Create and compile vertex shader
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertexShaderSource);
+        gl.compileShader(vertexShader);
+
+        // Create and compile fragment shader
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragmentShaderSource);
+        gl.compileShader(fragmentShader);
+
+        // Create program and link shaders
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        gl.useProgram(program);
+
+        // Draw a simple square in the center
+        const vertices = new Float32Array([
+            -0.5, -0.5,  // bottom-left
+            0.5, -0.5,  // bottom-right
+            0.5, 0.5,  // top-right
+            -0.5, -0.5,  // bottom-left
+            0.5, 0.5,  // top-right
+            -0.5, 0.5   // top-left
+        ]);
+
+        const positionAttributeLocation = gl.getAttribLocation(program, 'aPosition');
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(positionAttributeLocation);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 
     private adjustColorBrightness(color: string, amount: number): string {
