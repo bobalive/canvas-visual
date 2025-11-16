@@ -126,6 +126,9 @@ export class Visual implements IVisual {
     public update(options: VisualUpdateOptions) {
         console.log('Visual update', options);
 
+        // Signal rendering started
+        this.host.eventService.renderingStarted(options);
+
         // Get formatting settings
         this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(
             VisualFormattingSettingsModel,
@@ -163,6 +166,12 @@ export class Visual implements IVisual {
         this.canvasRenderer.render(canvasWidth, canvasHeight);
         this.svgRenderer.render(svgWidth, svgHeight);
         this.webglRenderer.render();
+
+        // Signal rendering finished after all renders complete
+        // Use requestAnimationFrame to ensure WebGL commands are flushed
+        requestAnimationFrame(() => {
+            this.host.eventService.renderingFinished(options);
+        });
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel {
