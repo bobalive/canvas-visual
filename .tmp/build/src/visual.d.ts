@@ -9,21 +9,14 @@ export declare class Visual implements IVisual {
     private formattingSettings;
     private formattingSettingsService;
     private canvasContainer;
-    private canvas;
-    private canvasContext;
     private svgContainer;
-    private svg;
-    private svgGroup;
     private webglContainer;
+    private canvasRenderer;
+    private svgRenderer;
+    private webglRenderer;
+    private canvas;
     private webglCanvas;
-    private gl;
-    private margin;
     constructor(options: VisualConstructorOptions);
     update(options: VisualUpdateOptions): void;
-    private getDataPoints;
-    private renderCanvasBarChart;
-    private renderSVGDonutChart;
-    private renderWebGLText;
-    private adjustColorBrightness;
     getFormattingModel(): powerbi.visuals.FormattingModel;
 }
